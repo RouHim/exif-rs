@@ -116,7 +116,20 @@ impl Reader {
         self.read_raw(buf)
     }
 
-    /// Reads an image file and parses the Exif attributes in it from an reader.
+    /// Reads an image and parses the Exif attributes in it.
+    /// This does not support HEIF images, as they need the io::Seek trait to be implemented.
+    /// The difference over `read_from_container` is,
+    /// this api is now compatible with web responses from various http clients like reqwest:
+    /// # Examples
+    /// ```
+    ///     let mut response = reqwest::blocking::get(
+    ///         "https://raw.githubusercontent.com/ianare/exif-samples/master/jpg/Samsung_Digimax_i50_MP3.jpg"
+    ///     )?;
+    ///     let exif = Reader::new().from_reader(&mut response)?;
+    ///     let date = exif.get_field(Tag::DateTime, In::PRIMARY).unwrap()
+    ///         .display_value().to_string();
+    /// ```
+    ///
     /// If an error occurred, `exif::Error` is returned.
     ///
     /// Supported formats are:
