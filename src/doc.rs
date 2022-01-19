@@ -66,13 +66,7 @@ doc_module_with_external_source!(
 ///   for f in reader.fields() { /* do something */ }
 ///   ```
 ///   The new code using 0.5.x:
-///   ```
-///   # use exif::{Exif, Reader};
-///   # let file = std::fs::File::open("tests/exif.jpg").unwrap();
-///   # let mut bufreader = std::io::BufReader::new(&file);
-///   let exif = Reader::new().read_from_container(&mut bufreader).unwrap();
-///   for f in exif.fields() { /* do something */ }
-///   ```
+///     ```
 ///
 /// ### Other new features
 ///
