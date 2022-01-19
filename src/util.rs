@@ -130,6 +130,7 @@ pub fn ctou32(c: u8) -> Result<u32, Error> {
 mod tests {
     use std::io::ErrorKind;
     use std::io::Read;
+
     use super::*;
 
     #[test]

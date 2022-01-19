@@ -27,19 +27,20 @@
 use std::io::{BufRead, ErrorKind};
 
 use crate::error::Error;
-use crate::util::{read8, read16};
+use crate::util::{read16, read8};
 
 mod marker {
     // The first byte of a marker.
-    pub const P:    u8 = 0xff;
+    pub const P: u8 = 0xff;
     // Marker codes.
-    pub const Z:    u8 = 0x00;		// Not a marker but a byte stuffing.
-    pub const TEM:  u8 = 0x01;
+    pub const Z: u8 = 0x00;
+    // Not a marker but a byte stuffing.
+    pub const TEM: u8 = 0x01;
     pub const RST0: u8 = 0xd0;
     pub const RST7: u8 = 0xd7;
-    pub const SOI:  u8 = 0xd8;
-    pub const EOI:  u8 = 0xd9;
-    pub const SOS:  u8 = 0xda;
+    pub const SOI: u8 = 0xd8;
+    pub const EOI: u8 = 0xd9;
+    pub const SOS: u8 = 0xda;
     pub const APP1: u8 = 0xe1;
 }
 
@@ -81,7 +82,7 @@ fn get_exif_attr_sub<R>(reader: &mut R)
             marker::Z | marker::TEM | marker::RST0..=marker::RST7 => continue,
             marker::SOI => return Err(Error::InvalidFormat("Unexpected SOI")),
             marker::EOI => return Err(Error::NotFound("JPEG")),
-            _ => {},
+            _ => {}
         }
         // Read marker segments.
         let len = read16(reader)?.checked_sub(2)

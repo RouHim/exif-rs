@@ -59,8 +59,7 @@ use crate::webp;
 ///            "72 pixels per inch");
 /// # Ok(()) }
 /// ```
-pub struct Reader {
-}
+pub struct Reader {}
 
 impl Reader {
     /// Constructs a new `Reader`.
@@ -96,7 +95,7 @@ impl Reader {
     /// This method is provided for the convenience even though
     /// parsing containers is basically out of the scope of this library.
     pub fn read_from_container<R>(&self, reader: &mut R) -> Result<Exif, Error>
-    where R: io::BufRead {
+        where R: io::BufRead + io::Seek {
         let mut buf = Vec::new();
         reader.by_ref().take(4096).read_to_end(&mut buf)?;
         if tiff::is_tiff(&buf) {
@@ -105,11 +104,45 @@ impl Reader {
             buf = jpeg::get_exif_attr(&mut buf.chain(reader))?;
         } else if png::is_png(&buf) {
             buf = png::get_exif_attr(&mut buf.chain(reader))?;
+        } else if isobmff::is_heif(&buf) {
+            reader.seek(io::SeekFrom::Start(0))?;
+            buf = isobmff::get_exif_attr(reader)?;
         } else if webp::is_webp(&buf) {
             buf = webp::get_exif_attr(&mut buf.chain(reader))?;
         } else {
             return Err(Error::InvalidFormat("Unknown image format"));
         }
+
+        self.read_raw(buf)
+    }
+
+    /// Reads an image file and parses the Exif attributes in it from an reader.
+    /// If an error occurred, `exif::Error` is returned.
+    ///
+    /// Supported formats are:
+    /// - TIFF and some RAW image formats based on it
+    /// - JPEG
+    /// - PNG
+    /// - WebP
+    pub fn read_from_reader<R>(&self, reader: &mut R) -> Result<Exif, Error> where R: io::Read {
+        let mut buf_reader = std::io::BufReader::new(reader);
+        let mut buf = Vec::new();
+
+        buf_reader.by_ref()
+            .take(4096)
+            .read_to_end(&mut buf)?;
+
+        if tiff::is_tiff(&buf) {
+            buf_reader.read_to_end(&mut buf)?;
+        } else if jpeg::is_jpeg(&buf) {
+            buf = jpeg::get_exif_attr(&mut buf.chain(buf_reader))?;
+        } else if png::is_png(&buf) {
+            buf = png::get_exif_attr(&mut buf.chain(buf_reader))?;
+        } else if webp::is_webp(&buf) {
+            buf = webp::get_exif_attr(&mut buf.chain(buf_reader))?;
+        } else {
+            return Err(Error::InvalidFormat("Unknown image format"));
+        };
 
         self.read_raw(buf)
     }
@@ -156,7 +189,7 @@ impl Exif {
 
     /// Returns an iterator of Exif fields.
     #[inline]
-    pub fn fields(&self) -> impl ExactSizeIterator<Item = &Field> {
+    pub fn fields(&self) -> impl ExactSizeIterator<Item=&Field> {
         self.entries.iter()
             .map(move |e| e.ref_field(&self.buf, self.little_endian))
     }
@@ -187,8 +220,10 @@ impl<'a> ProvideUnit<'a> for &'a Exif {
 mod tests {
     use std::fs::File;
     use std::io::BufReader;
+
     use crate::tag::Context;
     use crate::value::Value;
+
     use super::*;
 
     #[test]

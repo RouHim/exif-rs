@@ -171,7 +171,7 @@ impl<'a> AsciiValues<'a> {
 
 // A struct that wraps std::slice::Iter<'a, u8/u16/u32>.
 pub struct UIntIter<'a> {
-    iter: Box<dyn ExactSizeIterator<Item=u32> + 'a>
+    iter: Box<dyn ExactSizeIterator<Item=u32> + 'a>,
 }
 
 impl<'a> Iterator for UIntIter<'a> {
@@ -234,7 +234,7 @@ impl fmt::Debug for Value {
 struct IterDebugAdapter<F>(F);
 
 impl<F, T, I> fmt::Debug for IterDebugAdapter<F>
-where F: Fn() -> T, T: Iterator<Item = I>, I: fmt::Debug {
+    where F: Fn() -> T, T: Iterator<Item=I>, I: fmt::Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.0()).finish()
     }
@@ -297,7 +297,10 @@ impl From<&DefaultValue> for Option<Value> {
 
 /// An unsigned rational number, which is a pair of 32-bit unsigned integers.
 #[derive(Copy, Clone)]
-pub struct Rational { pub num: u32, pub denom: u32 }
+pub struct Rational {
+    pub num: u32,
+    pub denom: u32,
+}
 
 impl Rational {
     /// Converts the value to an f32.
@@ -347,7 +350,10 @@ impl From<Rational> for f32 {
 
 /// A signed rational number, which is a pair of 32-bit signed integers.
 #[derive(Copy, Clone)]
-pub struct SRational { pub num: i32, pub denom: i32 }
+pub struct SRational {
+    pub num: i32,
+    pub denom: i32,
+}
 
 impl SRational {
     /// Converts the value to an f32.
@@ -439,13 +445,13 @@ pub fn get_type_info<E>(typecode: u16) -> (usize, Parser) where E: Endian {
 }
 
 fn parse_byte(data: &[u8], offset: usize, count: usize) -> Value {
-    Value::Byte(data[offset .. offset + count].to_vec())
+    Value::Byte(data[offset..offset + count].to_vec())
 }
 
 fn parse_ascii(data: &[u8], offset: usize, count: usize) -> Value {
     // Any ASCII field can contain multiple strings [TIFF6 Image File
     // Directory].
-    let iter = (&data[offset .. offset + count]).split(|&b| b == b'\0');
+    let iter = (&data[offset..offset + count]).split(|&b| b == b'\0');
     let mut v: Vec<Vec<u8>> = iter.map(|x| x.to_vec()).collect();
     if v.last().map_or(false, |x| x.len() == 0) {
         v.pop();
@@ -484,13 +490,13 @@ fn parse_rational<E>(data: &[u8], offset: usize, count: usize)
 }
 
 fn parse_sbyte(data: &[u8], offset: usize, count: usize) -> Value {
-    let bytes = data[offset .. offset + count].iter()
+    let bytes = data[offset..offset + count].iter()
         .map(|x| *x as i8).collect();
     Value::SByte(bytes)
 }
 
 fn parse_undefined(data: &[u8], offset: usize, count: usize) -> Value {
-    Value::Undefined(data[offset .. offset + count].to_vec(), offset as u32)
+    Value::Undefined(data[offset..offset + count].to_vec(), offset as u32)
 }
 
 fn parse_sshort<E>(data: &[u8], offset: usize, count: usize)
@@ -552,6 +558,7 @@ fn parse_unknown(data: &[u8], offset: usize, count: usize) -> Value {
 #[cfg(test)]
 mod tests {
     use crate::endian::BigEndian;
+
     use super::*;
 
     #[test]
@@ -573,14 +580,14 @@ mod tests {
     #[test]
     fn ascii() {
         let sets: &[(&[u8], Vec<&[u8]>)] = &[
-            (b"x", vec![]),				// malformed
+            (b"x", vec![]),                // malformed
             (b"x\0", vec![b""]),
             (b"x\0\0", vec![b"", b""]),
-            (b"xA", vec![b"A"]),			// malformed
+            (b"xA", vec![b"A"]),            // malformed
             (b"xA\0", vec![b"A"]),
-            (b"xA\0B", vec![b"A", b"B"]),		// malformed
+            (b"xA\0B", vec![b"A", b"B"]),        // malformed
             (b"xA\0B\0", vec![b"A", b"B"]),
-            (b"xA\0\xbe\0", vec![b"A", b"\xbe"]),	// not ASCII
+            (b"xA\0\xbe\0", vec![b"A", b"\xbe"]),    // not ASCII
         ];
         let (unitlen, parser) = get_type_info::<BigEndian>(2);
         for &(data, ref ans) in sets {
@@ -642,7 +649,7 @@ mod tests {
                     for (x, y) in v.iter().zip(ans.iter()) {
                         assert!(x.num == y.num && x.denom == y.denom);
                     }
-                },
+                }
                 v => panic!("wrong variant {:?}", v),
             }
         }
@@ -677,7 +684,7 @@ mod tests {
                 Value::Undefined(v, o) => {
                     assert_eq!(v, ans);
                     assert_eq!(o, 1);
-                },
+                }
                 v => panic!("wrong variant {:?}", v),
             }
         }
@@ -734,7 +741,7 @@ mod tests {
                     for (x, y) in v.iter().zip(ans.iter()) {
                         assert!(x.num == y.num && x.denom == y.denom);
                     }
-                },
+                }
                 v => panic!("wrong variant {:?}", v),
             }
         }
@@ -875,9 +882,9 @@ mod tests {
         assert_eq!(format!("{}", r), "4294967295/4294967295");
 
         let r = Rational::from((10, 20));
-        assert_eq!(format!("{}", r),         "10/20");
-        assert_eq!(format!("{:11}", r),      "      10/20");
-        assert_eq!(format!("{:3}", r),       "10/20");
+        assert_eq!(format!("{}", r), "10/20");
+        assert_eq!(format!("{:11}", r), "      10/20");
+        assert_eq!(format!("{:3}", r), "10/20");
     }
 
     #[test]
@@ -888,19 +895,19 @@ mod tests {
         assert_eq!(format!("{}", r), "2147483647/2147483647");
 
         let r = SRational::from((-10, 20));
-        assert_eq!(format!("{}", r),         "-10/20");
-        assert_eq!(format!("{:11}", r),      "     -10/20");
-        assert_eq!(format!("{:3}", r),       "-10/20");
+        assert_eq!(format!("{}", r), "-10/20");
+        assert_eq!(format!("{:11}", r), "     -10/20");
+        assert_eq!(format!("{:3}", r), "-10/20");
 
         let r = SRational::from((10, -20));
-        assert_eq!(format!("{}", r),         "10/-20");
-        assert_eq!(format!("{:11}", r),      "     10/-20");
-        assert_eq!(format!("{:3}", r),       "10/-20");
+        assert_eq!(format!("{}", r), "10/-20");
+        assert_eq!(format!("{:11}", r), "     10/-20");
+        assert_eq!(format!("{:3}", r), "10/-20");
 
         let r = SRational::from((-10, -20));
-        assert_eq!(format!("{}", r),         "-10/-20");
-        assert_eq!(format!("{:11}", r),      "    -10/-20");
-        assert_eq!(format!("{:3}", r),       "-10/-20");
+        assert_eq!(format!("{}", r), "-10/-20");
+        assert_eq!(format!("{:11}", r), "    -10/-20");
+        assert_eq!(format!("{:3}", r), "-10/-20");
     }
 
     #[test]

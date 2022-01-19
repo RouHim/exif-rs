@@ -27,9 +27,9 @@
 use std::fmt;
 
 use crate::error::Error;
+use crate::util::atou16;
 use crate::value;
 use crate::value::Value;
-use crate::util::atou16;
 
 /// A tag of a TIFF/Exif field.
 ///
@@ -117,13 +117,16 @@ impl fmt::Display for Tag {
 #[non_exhaustive]
 pub enum Context {
     /// TIFF attributes defined in the TIFF Rev. 6.0 specification.
-    Tiff,	// 0th/1st IFD (toplevel)
+    Tiff,
+    // 0th/1st IFD (toplevel)
     /// Exif attributes.
-    Exif,	// -- Exif IFD
+    Exif,
+    // -- Exif IFD
     /// GPS attributes.
-    Gps,	// -- GPS IFD
+    Gps,
+    // -- GPS IFD
     /// Interoperability attributes.
-    Interop,	// -- Exif IFD -- Interoperability IFD
+    Interop,    // -- Exif IFD -- Interoperability IFD
 }
 
 #[derive(Debug)]
@@ -801,7 +804,7 @@ fn d_datetime(w: &mut dyn fmt::Write, value: &Value) -> fmt::Result {
         match crate::tiff::DateTime::from_ascii(dt) {
             Ok(dt) => return write!(w, "{}", dt),
             Err(Error::BlankValue(_)) => return w.write_str("unknown"),
-            _ => {},
+            _ => {}
         }
     }
     d_default(w, value)
@@ -1279,7 +1282,7 @@ fn d_gpstimestamp(w: &mut dyn fmt::Write, value: &Value) -> fmt::Result {
                    if h < 10.0 { "0" } else { "" }, h,
                    if m < 10.0 { "0" } else { "" }, m,
                    if s < 10.0 { "0" } else { "" }, s)
-        },
+        }
         _ => d_default(w, value),
     }
 }
@@ -1423,7 +1426,7 @@ fn d_default(w: &mut dyn fmt::Write, value: &Value) -> fmt::Result {
 }
 
 fn d_sub_comma<I, T>(w: &mut dyn fmt::Write, itit: I) -> fmt::Result
-where I: IntoIterator<Item = T>, T: fmt::Display {
+    where I: IntoIterator<Item=T>, T: fmt::Display {
     let mut first = true;
     for x in itit {
         match first {
@@ -1458,7 +1461,7 @@ fn d_sub_ascii(w: &mut dyn fmt::Write, bytes: &[u8]) -> fmt::Result {
             b'\\' | b'"' => {
                 w.write_char('\\')?;
                 w.write_char(c as char)?;
-            },
+            }
             0x20..=0x7e => w.write_char(c as char)?,
             _ => write!(w, "\\x{:02x}", c)?,
         }
@@ -1469,6 +1472,7 @@ fn d_sub_ascii(w: &mut dyn fmt::Write, bytes: &[u8]) -> fmt::Result {
 #[cfg(test)]
 mod tests {
     use value::Rational;
+
     use super::*;
 
     // This test checks if Tag constants can be used in patterns.
@@ -1476,12 +1480,12 @@ mod tests {
     fn tag_constant_in_pattern() {
         // Destructuring, which will always work.
         match Tag(Context::Tiff, 0x132) {
-            Tag(Context::Tiff, 0x132) => {},
+            Tag(Context::Tiff, 0x132) => {}
             _ => panic!("failed to match Tag"),
         }
         // Matching against a constant.  Test if this compiles.
         match Tag(Context::Tiff, 0x132) {
-            Tag::DateTime => {},
+            Tag::DateTime => {}
             _ => panic!("failed to match Tag"),
         }
     }
@@ -1498,7 +1502,7 @@ mod tests {
                 assert_eq!(v.len(), 1);
                 assert_eq!(v[0].num, 72);
                 assert_eq!(v[0].denom, 1);
-            },
+            }
             _ => panic!(),
         }
         match Tag::FileSource.default_value() {

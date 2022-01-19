@@ -26,7 +26,7 @@
 
 use std::io::{BufRead, ErrorKind};
 
-use crate::endian::{Endian, BigEndian};
+use crate::endian::{BigEndian, Endian};
 use crate::error::Error;
 use crate::util::{BufReadExt as _, ReadExt as _};
 

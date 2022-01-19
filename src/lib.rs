@@ -95,8 +95,8 @@ pub use reader::{Exif, Reader};
 pub use tag::{Context, Tag};
 pub use tiff::{DateTime, Field, In};
 pub use tiff::parse_exif;
-pub use value::Value;
 pub use value::{Rational, SRational};
+pub use value::Value;
 
 /// The interfaces in this module are experimental and unstable.
 pub mod experimental {

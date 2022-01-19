@@ -27,9 +27,9 @@
 use std::convert::{TryFrom as _, TryInto as _};
 use std::io::{BufRead, ErrorKind, Seek, SeekFrom};
 
-use crate::endian::{Endian, BigEndian};
+use crate::endian::{BigEndian, Endian};
 use crate::error::Error;
-use crate::util::{read64, BufReadExt as _, ReadExt as _};
+use crate::util::{BufReadExt as _, read64, ReadExt as _};
 
 // Checking "mif1" in the compatible brands should be enough, because
 // the "heic", "heix", "heim", and "heis" files shall include "mif1"
@@ -47,7 +47,7 @@ impl From<&'static str> for Error {
 }
 
 pub fn get_exif_attr<R>(reader: &mut R) -> Result<Vec<u8>, Error>
-where R: BufRead + Seek {
+    where R: BufRead + Seek {
     let mut parser = Parser::new(reader);
     match parser.parse() {
         Err(Error::Io(ref e)) if e.kind() == ErrorKind::UnexpectedEof =>
@@ -61,9 +61,9 @@ where R: BufRead + Seek {
             if buf.len() - 4 < offset {
                 return Err("Invalid Exif header offset".into());
             }
-            buf.drain(.. 4 + offset);
+            buf.drain(..4 + offset);
             Ok(buf)
-        },
+        }
     }
 }
 
@@ -103,7 +103,7 @@ impl<R> Parser<R> where R: BufRead + Seek {
                     let buf = self.read_file_level_box(size)?;
                     self.parse_ftyp(BoxSplitter::new(&buf))?;
                     self.ftyp_checked = true;
-                },
+                }
                 b"meta" => {
                     if !self.ftyp_checked {
                         return Err("MetaBox found before FileTypeBox".into());
@@ -111,7 +111,7 @@ impl<R> Parser<R> where R: BufRead + Seek {
                     let buf = self.read_file_level_box(size)?;
                     let exif = self.parse_meta(BoxSplitter::new(&buf))?;
                     return Ok(exif);
-                },
+                }
                 _ => self.skip_file_level_box(size)?,
             }
         }
@@ -142,13 +142,13 @@ impl<R> Parser<R> where R: BufRead + Seek {
             std::u64::MAX => {
                 buf = Vec::new();
                 self.reader.read_to_end(&mut buf)?;
-            },
+            }
             _ => {
                 let size = size.try_into()
                     .or(Err("Box is larger than the address space"))?;
                 buf = Vec::new();
                 self.reader.read_exact_len(&mut buf, size)?;
-            },
+            }
         }
         Ok(buf)
     }
@@ -187,7 +187,7 @@ impl<R> Parser<R> where R: BufRead + Seek {
                 b"idat" => idat = Some(body.slice(body.len())?),
                 b"iinf" => self.parse_iinf(body)?,
                 b"iloc" => iloc = Some(body),
-                _ => {},
+                _ => {}
             }
         }
 
@@ -206,18 +206,18 @@ impl<R> Parser<R> where R: BufRead + Seek {
                     // should fail.
                     self.reader.seek(SeekFrom::Start(off))?;
                     match len {
-                        0 => { self.reader.read_to_end(&mut buf)?; },
+                        0 => { self.reader.read_to_end(&mut buf)?; }
                         _ => {
                             let len = len.try_into()
                                 .or(Err("Extent too large"))?;
                             self.reader.read_exact_len(&mut buf, len)?;
-                        },
+                        }
                     }
                     if buf.len() > MAX_EXIF_SIZE {
                         return Err("Exif data too large".into());
                     }
                 }
-            },
+            }
             1 => {
                 let idat = idat.ok_or("No ItemDataBox")?;
                 for &(_, off, len) in &location.extents {
@@ -234,7 +234,7 @@ impl<R> Parser<R> where R: BufRead + Seek {
                         return Err("Exif data too large".into());
                     }
                 }
-            },
+            }
             2 => return Err(Error::NotSupported(
                 "Construction by item offset is not supported")),
             _ => return Err("Invalid construction_method".into()),
@@ -247,7 +247,10 @@ impl<R> Parser<R> where R: BufRead + Seek {
         let tmp = boxp.uint16().map(usize::from)?;
         let (offset_size, length_size, base_offset_size) =
             (tmp >> 12, tmp >> 8 & 0xf, tmp >> 4 & 0xf);
-        let index_size = match version { 1 | 2 => tmp & 0xf, _ => 0 };
+        let index_size = match version {
+            1 | 2 => tmp & 0xf,
+            _ => 0
+        };
         let item_count = match version {
             0 | 1 => boxp.uint16()?.into(),
             2 => boxp.uint32()?,
@@ -284,11 +287,14 @@ impl<R> Parser<R> where R: BufRead + Seek {
                     extents.push((index, offset, length));
                 }
                 self.item_location = Some(Location {
-                    construction_method, extents, base_offset });
+                    construction_method,
+                    extents,
+                    base_offset,
+                });
             } else {
                 // (15 + 15 + 15) * u16::MAX never overflows.
                 boxp.slice((index_size + offset_size + length_size) *
-                           extent_count)?;
+                    extent_count)?;
             }
         }
         Ok(())
@@ -304,7 +310,7 @@ impl<R> Parser<R> where R: BufRead + Seek {
             let (boxtype, body) = boxp.child_box()?;
             match boxtype {
                 b"infe" => self.parse_infe(body)?,
-                _ => {},
+                _ => {}
             }
         }
         Ok(())
@@ -418,6 +424,7 @@ impl<'a> BoxSplitter<'a> {
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
+
     use super::*;
 
     #[test]

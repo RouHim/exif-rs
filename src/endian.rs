@@ -41,6 +41,7 @@ pub trait Endian {
 }
 
 pub struct BigEndian;
+
 pub struct LittleEndian;
 
 macro_rules! generate_load {
@@ -109,16 +110,16 @@ mod tests {
     #[test]
     fn loadu64() {
         assert_eq!(BigEndian::loadu64(&[0x01, 0x02, 0x03, 0x04,
-                                        0x05, 0x06, 0x07, 0x08], 0),
+            0x05, 0x06, 0x07, 0x08], 0),
                    0x0102030405060708);
         assert_eq!(BigEndian::loadu64(&[0x01, 0x02, 0x03, 0x04, 0x05,
-                                        0x06, 0x07, 0x08, 0x09], 1),
+            0x06, 0x07, 0x08, 0x09], 1),
                    0x0203040506070809);
         assert_eq!(LittleEndian::loadu64(&[0x01, 0x02, 0x03, 0x04,
-                                           0x05, 0x06, 0x07, 0x08], 0),
+            0x05, 0x06, 0x07, 0x08], 0),
                    0x0807060504030201);
         assert_eq!(LittleEndian::loadu64(&[0x01, 0x02, 0x03, 0x04, 0x05,
-                                           0x06, 0x07, 0x08, 0x09], 1),
+            0x06, 0x07, 0x08, 0x09], 1),
                    0x0908070605040302);
     }
 

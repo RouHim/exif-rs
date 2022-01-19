@@ -25,15 +25,16 @@
 //
 
 use std::fmt;
+
 use mutate_once::MutOnce;
 
-use crate::endian::{Endian, BigEndian, LittleEndian};
+use crate::endian::{BigEndian, Endian, LittleEndian};
 use crate::error::Error;
 use crate::tag::{Context, Tag, UnitPiece};
-use crate::value;
-use crate::value::Value;
-use crate::value::get_type_info;
 use crate::util::{atou16, ctou32};
+use crate::value;
+use crate::value::get_type_info;
+use crate::value::Value;
 
 // TIFF header magic numbers [EXIF23 4.5.2].
 const TIFF_BE: u16 = 0x4d4d;
@@ -92,7 +93,7 @@ impl IfdEntry {
                 if unitlen != 0 {
                     *value = parser(data, ofs as usize, cnt as usize);
                 }
-            },
+            }
             _ => panic!("value is already parsed"),
         }
     }
@@ -177,11 +178,11 @@ impl Parser {
             TIFF_BE => {
                 self.little_endian = false;
                 self.parse_sub::<BigEndian>(data)
-            },
+            }
             TIFF_LE => {
                 self.little_endian = true;
                 self.parse_sub::<LittleEndian>(data)
-            },
+            }
             _ => Err(Error::InvalidFormat("Invalid TIFF byte order")),
         }
     }
@@ -251,8 +252,13 @@ impl Parser {
                     data, &mut val, Context::Gps, ifd_num)?,
                 Tag::InteropIFDPointer => self.parse_child_ifd::<E>(
                     data, &mut val, Context::Interop, ifd_num)?,
-                _ => self.entries.push(IfdEntry { field: Field {
-                    tag: tag, ifd_num: In(ifd_num), value: val }.into()}),
+                _ => self.entries.push(IfdEntry {
+                    field: Field {
+                        tag: tag,
+                        ifd_num: In(ifd_num),
+                        value: val,
+                    }.into()
+                }),
             }
         }
 
@@ -323,7 +329,7 @@ impl DateTime {
         } else if data.len() < 19 {
             return Err(Error::InvalidFormat("DateTime too short"));
         } else if !(data[4] == b':' && data[7] == b':' && data[10] == b' ' &&
-                    data[13] == b':' && data[16] == b':') {
+            data[13] == b':' && data[16] == b':') {
             return Err(Error::InvalidFormat("Invalid DateTime delimiter"));
         }
         Ok(DateTime {
@@ -495,7 +501,7 @@ impl<'a, T> fmt::Display for DisplayValueUnit<'a, T> where T: ProvideUnit<'a> {
                     UnitPiece::Str(s) => f.write_str(s),
                     UnitPiece::Tag(tag) =>
                         if let Some(x) = self.unit_provider.get_field(
-                                tag, self.ifd_num) {
+                            tag, self.ifd_num) {
                             x.value.display_as(tag).fmt(f)
                         } else if let Some(x) = tag.default_value() {
                             x.display_as(tag).fmt(f)

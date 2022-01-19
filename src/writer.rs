@@ -27,7 +27,7 @@
 use std::io;
 use std::io::{Seek, SeekFrom, Write};
 
-use crate::endian::{Endian, BigEndian, LittleEndian};
+use crate::endian::{BigEndian, Endian, LittleEndian};
 use crate::error::Error;
 use crate::tag::{Context, Tag};
 use crate::tiff::{Field, In, TIFF_BE_SIG, TIFF_LE_SIG};
@@ -119,15 +119,15 @@ impl<'a> Writer<'a> {
             // Ignore the tags for the internal data structure.
             Field { tag: Tag::ExifIFDPointer, .. } |
             Field { tag: Tag::GPSInfoIFDPointer, .. } |
-            Field { tag: Tag::InteropIFDPointer, .. } => {},
+            Field { tag: Tag::InteropIFDPointer, .. } => {}
             // These tags are synthesized from the actual strip/tile data.
             Field { tag: Tag::StripOffsets, .. } |
             Field { tag: Tag::StripByteCounts, .. } |
             Field { tag: Tag::TileOffsets, .. } |
-            Field { tag: Tag::TileByteCounts, .. } => {},
+            Field { tag: Tag::TileByteCounts, .. } => {}
             // These tags are synthesized from the actual JPEG thumbnail.
             Field { tag: Tag::JPEGInterchangeFormat, .. } |
-            Field { tag: Tag::JPEGInterchangeFormatLength, .. } => {},
+            Field { tag: Tag::JPEGInterchangeFormatLength, .. } => {}
             // Other normal tags.
             Field { tag: Tag(ctx, _), ifd_num, .. } => {
                 let ifd = self.pick_ifd(ifd_num);
@@ -137,7 +137,7 @@ impl<'a> Writer<'a> {
                     Context::Gps => ifd.gps_fields.push(field),
                     Context::Interop => ifd.interop_fields.push(field),
                 }
-            },
+            }
         }
     }
 
@@ -289,10 +289,19 @@ fn synthesize_fields<W>(w: &mut W, ifd: &Ifd, ifd_num: In,
     let interop_fields_len = ws.interop_fields.len();
     let gps_fields_len = ws.gps_fields.len();
     let exif_fields_len = ws.exif_fields.len() +
-        match interop_fields_len { 0 => 0, _ => 1 };
+        match interop_fields_len {
+            0 => 0,
+            _ => 1
+        };
     let tiff_fields_len = ws.tiff_fields.len() +
-        match gps_fields_len { 0 => 0, _ => 1 } +
-        match exif_fields_len { 0 => 0, _ => 1 };
+        match gps_fields_len {
+            0 => 0,
+            _ => 1
+        } +
+        match exif_fields_len {
+            0 => 0,
+            _ => 1
+        };
     assert_ne!(tiff_fields_len, 0);
 
     ws.tiff_ifd_offset = reserve_ifd(w, tiff_fields_len)?;
@@ -339,7 +348,7 @@ fn synthesize_fields<W>(w: &mut W, ifd: &Ifd, ifd_num: In,
 fn write_image<W, E>(w: &mut W, ws: &WriterState, ifd: &Ifd)
                      -> Result<u32, Error> where W: Write + Seek, E: Endian {
     let (next_ifd_offset_offset,
-         strip_offsets_offset, tile_offsets_offset, jpeg_offset) =
+        strip_offsets_offset, tile_offsets_offset, jpeg_offset) =
         write_ifd_and_fields::<_, E>(
             w, &ws.tiff_fields, ws.tiff_ifd_offset)?;
     if ws.exif_fields.len() > 0 {
@@ -480,21 +489,21 @@ fn compose_value<E>(value: &Value)
                 buf.push(0);
             }
             Ok((2, buf.len(), buf))
-        },
+        }
         Value::Short(ref vec) => {
             let mut buf = Vec::new();
             for &v in vec {
                 E::writeu16(&mut buf, v)?;
             }
             Ok((3, vec.len(), buf))
-        },
+        }
         Value::Long(ref vec) => {
             let mut buf = Vec::new();
             for &v in vec {
                 E::writeu32(&mut buf, v)?;
             }
             Ok((4, vec.len(), buf))
-        },
+        }
         Value::Rational(ref vec) => {
             let mut buf = Vec::new();
             for v in vec {
@@ -502,11 +511,11 @@ fn compose_value<E>(value: &Value)
                 E::writeu32(&mut buf, v.denom)?;
             }
             Ok((5, vec.len(), buf))
-        },
+        }
         Value::SByte(ref vec) => {
             let bytes = vec.iter().map(|x| *x as u8).collect();
             Ok((6, vec.len(), bytes))
-        },
+        }
         Value::Undefined(ref s, _) =>
             Ok((7, s.len(), s.to_vec())),
         Value::SShort(ref vec) => {
@@ -515,14 +524,14 @@ fn compose_value<E>(value: &Value)
                 E::writeu16(&mut buf, v as u16)?;
             }
             Ok((8, vec.len(), buf))
-        },
+        }
         Value::SLong(ref vec) => {
             let mut buf = Vec::new();
             for &v in vec {
                 E::writeu32(&mut buf, v as u32)?;
             }
             Ok((9, vec.len(), buf))
-        },
+        }
         Value::SRational(ref vec) => {
             let mut buf = Vec::new();
             for v in vec {
@@ -530,21 +539,21 @@ fn compose_value<E>(value: &Value)
                 E::writeu32(&mut buf, v.denom as u32)?;
             }
             Ok((10, vec.len(), buf))
-        },
+        }
         Value::Float(ref vec) => {
             let mut buf = Vec::new();
             for &v in vec {
                 E::writeu32(&mut buf, v.to_bits())?;
             }
             Ok((11, vec.len(), buf))
-        },
+        }
         Value::Double(ref vec) => {
             let mut buf = Vec::new();
             for &v in vec {
                 E::writeu64(&mut buf, v.to_bits())?;
             }
             Ok((12, vec.len(), buf))
-        },
+        }
         Value::Unknown(_, _, _) =>
             Err(Error::NotSupported("Cannot write unknown field types")),
     }
@@ -585,6 +594,7 @@ fn get_offset<W>(w: &mut W)
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
+
     use super::*;
 
     #[test]
