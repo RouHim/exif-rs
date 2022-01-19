@@ -52,7 +52,7 @@ use crate::webp;
 /// use exif::{In, Reader, Tag};
 /// let file = std::fs::File::open("tests/exif.jpg")?;
 /// let exif = Reader::new()
-///     .from_container(&mut std::io::BufReader::new(&file))?;
+///     .from_reader(&mut std::io::BufReader::new(&file))?;
 /// let xres = exif.get_field(Tag::XResolution, In::PRIMARY)
 ///     .ok_or(Error("tests/exif.jpg must have XResolution"))?;
 /// assert_eq!(xres.display_value().with_unit(&exif).to_string(),
@@ -124,7 +124,7 @@ impl Reader {
     /// - JPEG
     /// - PNG
     /// - WebP
-    pub fn from_container<R>(&self, reader: &mut R) -> Result<Exif, Error> where R: io::Read {
+    pub fn from_reader<R>(&self, reader: &mut R) -> Result<Exif, Error> where R: io::Read {
         let mut buf_reader = std::io::BufReader::new(reader);
         let mut buf = Vec::new();
 
@@ -156,7 +156,7 @@ impl Reader {
 /// # fn sub() -> Option<()> {
 /// # use exif::{In, Reader, Tag};
 /// # let file = std::fs::File::open("tests/exif.jpg").unwrap();
-/// # let exif = Reader::new().from_container(
+/// # let exif = Reader::new().from_reader(
 /// #     &mut std::io::BufReader::new(&file)).unwrap();
 /// // Get a specific field.
 /// let xres = exif.get_field(Tag::XResolution, In::PRIMARY)?;
@@ -229,7 +229,7 @@ mod tests {
     #[test]
     fn get_field() {
         let file = File::open("tests/yaminabe.tif").unwrap();
-        let exif = Reader::new().from_container(
+        let exif = Reader::new().from_reader(
             &mut BufReader::new(&file)).unwrap();
         match exif.get_field(Tag::ImageDescription, In(0)).unwrap().value {
             Value::Ascii(ref vec) => assert_eq!(vec, &[b"Test image"]),
@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn display_value_with_unit() {
         let file = File::open("tests/yaminabe.tif").unwrap();
-        let exif = Reader::new().from_container(
+        let exif = Reader::new().from_reader(
             &mut BufReader::new(&file)).unwrap();
         // No unit.
         let exifver = exif.get_field(Tag::ExifVersion, In::PRIMARY).unwrap();
@@ -275,10 +275,10 @@ mod tests {
     #[test]
     fn yaminabe() {
         let file = File::open("tests/yaminabe.tif").unwrap();
-        let be = Reader::new().from_container(
+        let be = Reader::new().from_reader(
             &mut BufReader::new(&file)).unwrap();
         let file = File::open("tests/yaminale.tif").unwrap();
-        let le = Reader::new().from_container(
+        let le = Reader::new().from_reader(
             &mut BufReader::new(&file)).unwrap();
         assert!(!be.little_endian());
         assert!(le.little_endian());
@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn heif() {
         let file = std::fs::File::open("tests/exif.heic").unwrap();
-        let exif = Reader::new().from_container(
+        let exif = Reader::new().from_reader(
             &mut std::io::BufReader::new(&file)).unwrap();
         assert_eq!(exif.fields().len(), 2);
         let exifver = exif.get_field(Tag::ExifVersion, In::PRIMARY).unwrap();
@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn png() {
         let file = std::fs::File::open("tests/exif.png").unwrap();
-        let exif = Reader::new().from_container(
+        let exif = Reader::new().from_reader(
             &mut std::io::BufReader::new(&file)).unwrap();
         assert_eq!(exif.fields().len(), 6);
         let exifver = exif.get_field(Tag::ExifVersion, In::PRIMARY).unwrap();
@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn webp() {
         let file = std::fs::File::open("tests/exif.webp").unwrap();
-        let exif = Reader::new().from_container(
+        let exif = Reader::new().from_reader(
             &mut std::io::BufReader::new(&file)).unwrap();
         assert_eq!(exif.fields().len(), 6);
         let exifver = exif.get_field(Tag::ExifVersion, In::PRIMARY).unwrap();
