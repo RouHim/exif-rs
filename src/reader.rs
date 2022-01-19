@@ -96,7 +96,7 @@ impl Reader {
     /// This method is provided for the convenience even though
     /// parsing containers is basically out of the scope of this library.
     pub fn read_from_container<R>(&self, reader: &mut R) -> Result<Exif, Error>
-    where R: io::BufRead + io::Seek {
+    where R: io::BufRead {
         let mut buf = Vec::new();
         reader.by_ref().take(4096).read_to_end(&mut buf)?;
         if tiff::is_tiff(&buf) {
@@ -105,9 +105,6 @@ impl Reader {
             buf = jpeg::get_exif_attr(&mut buf.chain(reader))?;
         } else if png::is_png(&buf) {
             buf = png::get_exif_attr(&mut buf.chain(reader))?;
-        } else if isobmff::is_heif(&buf) {
-            reader.seek(io::SeekFrom::Start(0))?;
-            buf = isobmff::get_exif_attr(reader)?;
         } else if webp::is_webp(&buf) {
             buf = webp::get_exif_attr(&mut buf.chain(reader))?;
         } else {
